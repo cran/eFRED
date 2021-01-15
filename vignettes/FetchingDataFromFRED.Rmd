@@ -1,0 +1,84 @@
+---
+title: "Fetching Data from FRED"
+author: "Christopher Mann"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fetching Data from FRED}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The `eFRED` package makes it easy to import any number of series from the FRED 
+website into a single data.frame. 
+
+First, you will need an API key. You can freely obtain one by following the instructions 
+at https://fred.stlouisfed.org/docs/api/api_key.html. The API key is a 32 character, 
+lower-cased string. Once you have registered for one, assign it to a variable or 
+use the `set_fred_key` function.
+
+```{r}
+library(eFRED)
+api_key <- "abcdefghijklmnopqrstuvwxyz123456"
+set_fred_key(api_key)
+```
+
+Almost all of the `eFRED` functions require an API key. The `set_fred_key` function 
+sets the default key that is used by the functions so that you do not need to directly 
+pass the key each time the function is called.
+
+```{r include=FALSE}
+set_fred_key("04dc6777a721d81414a460093933e0ae")
+```
+
+FRED data can be extracted by using the `fred` function. The general format of the 
+function is  `fred(name1 = "code1", name2 = "code2", ...)`, where `"code"` is the unique series
+ID that can be found next to each series' title at https://fred.stlouisfed.org/, 
+and `name` is the new label for the series in the resulting data.frame. If no `name`
+is provided, then the code will be used. Any number of series can be used and 
+each code can be a character vector containing with multiple entries.
+
+The following searches for two series: "GDPC1" *(Real GDP)* and "UNRATE" *(unemployment rate)*.
+
+```{r}
+df <- fred(y = "GDPC1", "unrate", all=FALSE)
+head(df)
+```
+
+The column containing the data for GDP is named `"y"`. Since no name was provided for `"UNRATE"`, 
+the column name is the same as the series. Note that the codes are not case sensitive. The 
+`fred` function automatically converts all codes to uppercase. The last argument, `all=FALSE`, 
+is included because GDP and the unemployment rate have different frequencies *(quarterly vs annual)* 
+and different starting periods. When `all=FALSE` is used, the data.frame forces each value to the 
+shortest series; otherwise, the frequency would be monthly with many `NA` values for `y`.
+
+The raw information about each series is contained within the data.frame's `info` attribute, 
+unless `info=FALSE` is included.
+
+```{r}
+attr(df, "info")
+```
+
+The `eFRED` package contains a variety of other functions to interact with the 
+FRED API. For example, the `fred_search` function can be used to search for various 
+series. The example below searches for series based on the query `"unemployment"`. 
+The `args` parameter is a list containing other search parameters. In this case, 
+search is limited to only the top three results.
+
+```{r}
+search_results <- fred_search("unemployment", args = list(limit = 3))
+search_results
+```
+
+To grab each of these series, we can use the command `fred(search_results$id, info=FALSE)`.
+The information about each is not needed since we have it from the search results.
+
+The `eFRED` package also contains functions to search across tags, categories, releases, 
+and much more.
